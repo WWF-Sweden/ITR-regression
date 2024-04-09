@@ -1,0 +1,2 @@
+The file AR6_Scenarios_Database_World_v1.0.xlsx contains the scenario data used in regression modelling. However, du to its size, 
+it cannot be stored in the github repo. See the repo README for instructions on how to download the file.
