@@ -43,4 +43,36 @@ The second input file "“AR6_Scenarios_Database_World_v1.1.xlsx" is too large f
 To learn more about e.g. variables included or the different scenarios from the IPCC AR 6 report, detailed information is available at https://data.ece.iiasa.ac.at/ar6/#/docs
 
 
+## Summary of first R-code
+The structure of "CDP-WWF_ITR_preparation_of_data.R" is as follows: 
+
+> Section 1: defines paths and load packages
+
+> Section 2: loads all libraries
+
+> Section 3: contains functions that load and interpolate data, as well as combining variables and generating meta-data
+
+> Section 4.1-4.3 prepare variable lists to import from AR6 data
+
+> Section 4.4 pulls data from the AR6 scenario database and ETP 2017
+
+> Section 4.5 calculates the slopes for all chosen variables between 2020 and future years in 5-year increments
+
+> Section 4.6 preparing the data for the second part of the R-code: Regression and plots of data. Data is exported as csv and a summary in xlsx, which in loaded into the script Regression and plots of data. 
+
+## Summary of second R-code
+ Description: This script creates regressions and plots of AR6 scenario data, built on the output from AR6 Implementation_Preparation of data. The code includes different sections: 
+> Section 1. Preparation: install relevant packages and load libraries
+
+> Section 2. Load data output files generated in the first part of the R-code 
+
+> (Preparation of data) and xlsx created based on the underlying input AR data
+
+> Section 3. Defining benchmarks and variables for plotting
+
+> Section 4. Plotting the data
+
+> Section 5. Create and store regression models
+
+> Section 6. Save final output
 
