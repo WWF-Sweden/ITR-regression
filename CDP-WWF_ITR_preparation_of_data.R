@@ -1,48 +1,109 @@
-# This R-code is built on the the CDP-WWF temperature rating methodoloy, and the code TROPICS-scenario_prep.R available at https://github.com/CDPworldwide/TROPICS-regression/blob/master/TROPICS-scenario_prep.R. 
-# This R-code is updated with climate scenario data from AR6 by WWF and CDP for tCDP-WWF temperature rating methodoloy, update 1.5
-# This is the first part of the R-code
+# R-script to prepare data for CDP-WWF Temperature Scoring Methodology, version 1.5. 
+# This is script 1 of 2.
+######################################################################################################################
 
-######################################################################################################################.
+#                                           Introduction and input data files 
 
-#                                           Preparation of data 
+######################################################################################################################
 
-######################################################################################################################.
+# This R script reads, transforms, and generates metadata based on climate model simulations and scenarios from the IPCC Sixth Assessment Report (AR6). 
+# The purpose is to produce a cleaned and structured dataset for further analysis and benchmark construction (linear regression models) in the second script: CDP-WWF_ITR_Regression.R.
 
-# Description: This script reads, transforms, and generates metadata for AR6 scenario data. The code includes different sections: 
-# Section 1: defines path to AR6 data
-# Section 2: loads all libraries
-# Section 3: contains functions that load and interpolate data, as well as combining variables and generating meta-data
-# Section 4.1-4.3 prepare variable lists to import from AR6 data
-# Section 4.4 pulls data from the AR6 scenario database
-# Section 4.5 calculates the slopes for all chosen variables between 2020 and future years in 5-year increments
-# Section 4.6 preparing the data for the second part of the R-code: Regression and plots of data. Data is exported as csv and a summary in xlsx, which in loaded into the script Regression and plots of data. 
+# The R code is divided into two parts:
+# 1. CDP-WWF_ITR_preparation_of_data.R – this script, which prepares and processes the input climate scenario data from AR6. 
+# 2. CDP-WWF_ITR_Regression.R – creates linear regression models based on output from the first script, available at: https://github.com/WWF-Sweden/ITR-regression/tree/main
+# Together, these two scripts form a core component of the CDP-WWF Temperature Scoring Methodology, version 1.5.
+# The methodology paper is available here: https://wwf.panda.org/wwf_news/?11961441/CDP-WWF-Temperature-Scoring-Methodology
 
-# The input data in this R code is:
-# AR6_Scenarios_Database_World_v1.1, downloaded from https://data.ece.iiasa.ac.at/ar6/#/login
-# AR6_Scenarios_Database_metadata_indicators_v1.1, downloaded from https://data.ece.iiasa.ac.at/ar6/#/login
 
-# The reference of the data: 
+# Input data in this script is based on the IPCC AR6 Scenarios Database, which includes two main files:
+# - AR6_Scenarios_Database_World_v1.0
+# - AR6_Scenarios_Database_metadata_indicators_v1.0
+# Both files are available at: https://data.ece.iiasa.ac.at/ar6/
+
+# Data reference:
 # Edward Byers, Volker Krey, Elmar Kriegler, Keywan Riahi, et al.
 # AR6 Scenarios Database hosted by IIASA
 # International Institute for Applied Systems Analysis, 2022.
-# doi: 10.5281/zenodo.5886911 | url: data.ece.iiasa.ac.at/ar6/ DOI
+# DOI: 10.5281/zenodo.5886911 | URL: https://data.ece.iiasa.ac.at/ar6/
 
-# IEA ETP 2017 data is optionally used to test physical intensity benchmarks in combination with AR6. These data can be acquired from the IEA, but are not necessary to run either of the R scripts included in the repository. Note that this data is currently not being used, but the code is prepared for using such data. 
+# IEA ETP 2017 data is optionally used to test physical intensity benchmarks in combination with AR6 data.
+# These data can be acquired from the IEA but are not required to run either of the R scripts in this repository.
+# Note: This dataset is currently not used, but the code is prepared to accommodate it.
 
-# Note that the column heading names in the meta data file has been adjusted to not include characters such as brackets () or periods (.), since these characters otherwise can indicate somethine else in R.
-# Instead, these signs are replaced by underscore (_) in the variable names. E.g. "Median year of peak warming (MAGICCv7.5.3)" has been replaced with "Median_year_of_peak_warming_MAGICCv7_5_3"  
-# This has already been done for the downloaded file 'AR6_Scenarios_Database_metadata_indicators_v1.0.xlsx' on Github, and is not applicable to the world file. 
 
+# This script builds upon 'TROPICS-scenario_prep.R', originally developed for version 1.0 of the CDP-WWF Temperature Rating Methodology,
+# available at: https://github.com/CDPworldwide/TROPICS-regression/blob/master/TROPICS-scenario_prep.R
+
+######################################################################################################################
+
+#                                           Pre-processing of data
+
+######################################################################################################################
+
+# AR6_Scenarios_Database_World_v1.0:
+# When downloading the AR6_Scenarios_Database_World_v1.0, the file is in csv format. To use it in this R scrip, it needs to be converted to an Excel file.
+# This has to be done manually, as the file is not available in Excel format on the IPCC AR6 Scenarios Database.
+
+
+# AR6_Scenarios_Database_metadata_indicators_v1.0: 
+# Column names in the metadata file have been adjusted manually to remove characters such as brackets () and periods (.),
+# which can interfere with variable naming in R. These characters have been replaced with underscores (_).
+# For example, "Median year of peak warming (MAGICCv7.5.3)" has been renamed to "Median_year_of_peak_warming_MAGICCv7_5_3".
+# This adjustment has already been applied to the file 'AR6_Scenarios_Database_metadata_indicators_v1.0.xlsx' on GitHub,
+# and does not apply to the 'World' data file.
+
+######################################################################################################################
+
+#                                          Section overview
+
+######################################################################################################################
+
+# Section 1: Preamble, install and load libraries
+# Section 2: Defines path to AR6 data 
+# Section 3: Contains functions that load and interpolate data, as well as combining variables and generating meta-data
+# Section 4.1-4.3 Prepare variable lists to import from AR6 data
+# Section 4.4 Pulls data from the AR6 scenario database
+# Section 4.5 Calculates the slopes for all chosen variables between 2020 and future years in 5-year increments
+# Section 4.6 Preparing the data for the second part of the R-code: Regression and plots of data. Data is exported as csv and a summary in xlsx, which in loaded into the script Regression and plots of data. 
 
 ######################################################################################################################.
 
-# Section 1. Preamble =================================================================================
+# Section 1. Preamble, install and load libraries =================================================================================
 
 # clear working environment in R: 
 rm(list=ls())
 
 # Set the path for where files should be collected from. The path needs to be updated depending on where the files are stored: 
-setwd('name of folder for the library, where the input files are stored')
+setwd("Name of path to the folder with the input files")
+
+# Install packages, if you have not installed the packages, you need to install them first:
+install.packages("plyr")
+install.packages("dplyr")
+install.packages("readr")
+install.packages("zeallot")
+install.packages("futile.logger")
+install.packages("magrittr")
+install.packages("ggplot2")
+install.packages("openxlsx")
+install.packages("reshape2")
+install.packages("tidyr")
+install.packages("readxl")
+
+# Load libraries, if you have not installed the packages, you need to install them first in the code above.
+library(plyr)
+library(dplyr)
+library(readr)
+library(zeallot)
+library(futile.logger)
+library(magrittr)
+library(ggplot2)
+library(openxlsx)
+library(reshape2)
+library(tidyr)
+library(readxl)
+
+# Section 2. Defines path to AR6 data =================================================================================
 
 # Below load data from excel files - AR6 scenario data world and AR6 Metadata - and store them as file paths.
 # Load the AR6_Scenarios_Database_World_v1.1 and AR6_Scenarios_Database_metadata_indicators_v1.1 from the excel-files, and giving them the names f_AR6 and f_AR6_meta. Make sure that the names of the files are correct. 
@@ -56,39 +117,13 @@ use_etp <- FALSE
 # Indicates that the code should print processed data to CSV files by default,  
 write_csvs <- TRUE
 
-# Section 2. Install packages and load Library =================================================================================
-
-# Install packages:
-# install.packages("plyr")
-# install.packages("dplyr")
-# install.packages("readr")
-# install.packages("zeallot")
-# install.packages("futile.logger")
-# install.packages("magrittr")
-# install.packages("ggplot2")
-# install.packages("openxlsx")
-# install.packages("reshape2")
-# install.packages("tidyr")
-
-# Load libraries:
-library(plyr)
-library(dplyr)
-library(readr)
-library(zeallot)
-library(futile.logger)
-library(magrittr)
-library(ggplot2)
-library(openxlsx)
-library(reshape2)
-library(tidyr)
-
 # Section 3. Functions ===============================================================================
 
 # 3.1 Data loading functions =================================================================
 
 #### Meta-data #####
 
-# Get AR6 metadata from file 'AR6_Scenarios_Database_metadata_indicators_v1.1', to merge with output data frame, df
+# Get AR6 metadata from file 'AR6_Scenarios_Database_metadata_indicators_v1.0', to merge with output data frame, df
 # Define a function as 'get.AR6.meta'
 # Read data from the sheet meta_Ch3vetted_withclimate, as this sheet contains only scenarios that undergone through IPCC's vetting process. For more information regarding the vetting process, please follow this link: https://www.ipcc.ch/report/ar6/wg3/downloads/report/IPCC_AR6_WGIII_Annex-III.pdf
 
@@ -124,7 +159,7 @@ get.all.data <- function(refresh, all_regions=FALSE) {
       flog.debug('Pulling AR6 world data from Excel')
       
       
-      #### World-data - from file 'AR6_Scenarios_Database_World_v1.1'.#####
+      #### World-data - from file 'AR6_Scenarios_Database_World_v1.0'.#####
       # Read data from f_AR6, previously loaded: 
       AR6_all_data <- read.xlsx(f_AR6)
       
@@ -242,7 +277,6 @@ interp.all <- function(df, id.cols=5, cdata_yrs_out=FALSE) {
 # After the loop, the number of  id.cols is checked. If there is more than one identifier column, the function creates a new df by concatenating the identifier columns with the interpolated dataset (int_df). Otherwise, the identifier column is added to the interpolated df. 
 
 
-
 #### Calculation of Carbon Storage, CS, from Land use ###### 
 
 # This function adds a column estimating land use-related carbon sequestration, due to poor reporting of 'Carbon Sequestration|Land Use' in AR6 data. This was similar in the SR15 database. 
@@ -286,7 +320,7 @@ calculate.CDR <- function(df) {
 
 # This function calculates intensity figures. 
 
-# These intensity figures are based on the underlying data and variables in AR6_Scenarios_Database_World_v1.1 
+# These intensity figures are based on the underlying data and variables in AR6_Scenarios_Database_World_v1.0 
 # (note that all of them are not used in the method but prepared for if you wish to use them)
 calculate.intensity.vars <- function(df, use_etp) {
   df_out <- (df %>% mutate(
@@ -348,7 +382,7 @@ calculate.new.meta <- function(df, slope_vars, slope_year_pairs) {
           ) & !is.na(df[df$`Model-Scenario` == si, "Emissions|Kyoto Gases"])])
       
     }
-    
+  
     # Execute a similar code as above, but with the variable 'Emissions|CO2|Energy and Industrial Processes', and store the data in the new variable 'Year of max EI CO2 emissions'.
     if(is.na(df[df$`Model-Scenario` == si & df$Year == 2030, "Emissions|CO2|Energy and Industrial Processes"])) {
       df[df$`Model-Scenario` == si, "Year of max EI CO2 emissions"] <- NA
@@ -366,7 +400,6 @@ calculate.new.meta <- function(df, slope_vars, slope_year_pairs) {
 # In summary, the function above identifies the 'year of max Emissions|Kyoto Gases' and 'Emissions|CO2|Energy and Industrial Processes'. 
 # The data is stored in the columns "Year of max Kyoto emissions" and "Year of max EI CO2 emissions" in df. 
 # Note that these values are currently not used in the methodology, but is kept for now
-
 
 # 3.4 Utility functions ======================================================================
 
@@ -391,7 +424,6 @@ generate.varnames <- function(var0, subvars, include.var0=TRUE) {
   return(var_all)
 }
 
-
 # 4. Script ==================================================================================
 
 #___4.1 Logging settings =====================================================================
@@ -414,10 +446,9 @@ em_subs <- c('AFOLU', 'Energy', 'Energy and Industrial Processes', 'Energy|Deman
              'Energy|Demand|Transportation|Maritime', 'Energy|Demand|Transportation|Rail', 'Energy|Demand|Transportation|Road', 'Energy|Supply', 'Energy|Supply|Electricity', 'Industrial Processes', 
              'Industrial Processes|Cement', 'Industrial Processes|Chemicals', 'Industrial Processes|Pulp and Paper', 'Industrial Processes|Steel')
 
-# Visualize data
-print(em0)
-print(em_subs)
-
+# Visualize data if you wish to see the variables
+# print(em0)
+# print(em_subs)
 
 #___4.2.2 Carbon seq variables to include in output data frame ================================
 cs0 <- 'Carbon Sequestration'
@@ -452,12 +483,11 @@ all_varnames <- c((lapply(c(1:length(all0)),
                    %>% unlist()),
                   other_vars)
 
-# Printing all variable names
+# Printing all variable names, if you wish to see them.
 print(all_varnames)
 
 # Logg
 flog.debug('Looking for %s variables', length(all_varnames))
-
 
 #____4.4 Pull and transform data  ===================================
 
@@ -468,7 +498,6 @@ flog.debug('Looking for %s variables', length(all_varnames))
 # TRUE implies that data should be updated from its source
 
 ss0 <- get.all.data(TRUE) %>% filter(Variable %in% all_varnames) 
-
 
 ####### Interpolate and transform AR6 data by processing and re-structuring the data in ss0 
 flog.debug('Interpolating AR6 data')
@@ -492,7 +521,6 @@ interp_AR6_data <- (ss0 %>% interp.all(id.cols=5) %>%
                       ) %>%
                       select(c(ncol(.), 1:(ncol(.)-1))) # Re-structure the data so that the column model-scenario will be the first column
 )
-
 
 # Get ETP data, interpolate, and transform to same structure as AR6 
 if(use_etp) {
@@ -518,7 +546,6 @@ if(use_etp) {
 }
 
 
-
 flog.debug('Calculating new vars')
 
 # Update meta-data based on the processed and re-structured
@@ -540,9 +567,7 @@ AR6_meta <- (AR6_new_meta
              %>% merge(AR6_meta0, by='Model-Scenario'))
 
 
-
 #____4.5 Calculate slopes of each variable  ======================
-
 
 # Create a variable, keep_years, with five years intervals between 2020 - 2050
 keep_years <- seq(2020, 2050, 5)
@@ -613,7 +638,7 @@ AR6_output <- AR6_output %>% mutate(V8 = row_number())
 
 # Write the filtered data to a csv file
 if(write_csvs) {
-  write_excel_csv(AR6_output, path=paste0('name of folder to store output data/Scenario_dataset_detailed-', nfilters, '.csv'))
+  write_excel_csv(AR6_output, path=paste0('name of folder to store output data/Scenario_dataset_detailed-', nfilters, '.csv')) # Note that the folder needs to be in the current path set in the beginning of the code, in section 1. 
 }
 
 # Create a summary of the data that includes number of rows and unique scenarios:
@@ -621,8 +646,8 @@ summary <- data.frame(V8 = 1:nfilters, nscenariosv = nscenariosv)
 
 # If you want to write the summary to an Excel file
 if(write_csvs) {
-  write.xlsx(summary, 'name of folder to store output data', overwrite = TRUE)
+  write.xlsx(summary, 'name of folder to store output data/Scenario_dataset_summary.xlsx', overwrite = TRUE) # Could be same as above. Note that the folder needs to be in the current path set in the beginning of the code, in section 1. 
 }
 
-
 # ======================================= End of script =======================================
+# the second part of the code is avialable here: https://github.com/WWF-Sweden/ITR-regression/tree/main 

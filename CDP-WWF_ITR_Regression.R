@@ -1,28 +1,52 @@
-# This R-code is built on the the CDP-WWF temperature rating methodoloy, and the code ROPICS-regression /Regression_plots_and_models_SR15TempScoring_vAndres.R available at https://github.com/CDPworldwide/TROPICS-regression/blob/master/Regression_plots_and_models_SR15TempScoring_vAndres.R. 
-# This R-code is updated with climate scenario data from AR6 by WWF and CDP for CDP-WWF temperature rating methodoloy, update 1.5
-# This is the second part of the R-code.
+# R-script to create linear regression models (benchmarks) for the CDP-WWF Temperature Scoring Methodology, version 1.5. 
+# This is script 2 of 2.
 
-# The reference of the data: 
+######################################################################################################################
+
+#                                           Introduction and input data files 
+
+######################################################################################################################
+
+# This R script creates behcmarks used to assess the temperature scores of any climate target or ambition, based on the IPCC AR6 climate model similations with scenarios. 
+
+# The R code is divided into two parts:
+# 1. CDP-WWF_ITR_preparation_of_data.R – which prepares and processes the input IPCC AR6 data
+# 2. CDP-WWF_ITR_Regression.R – this script, which creates the regression models and plots based on the processed data from the first part.
+
+# Together, this script and CDP-WWF_ITR_preparation_of_data.R form a core component of the CDP-WWF Temperature Scoring Methodology, version 1.5.
+# The methodology paper is available here: https://wwf.panda.org/wwf_news/?11961441/CDP-WWF-Temperature-Scoring-Methodology
+
+# This script builds upon 'TROPICS-regression /Regression_plots_and_models_SR15TempScoring_vAndres.R'
+# available at:  https://github.com/CDPworldwide/TROPICS-regression/blob/master/Regression_plots_and_models_SR15TempScoring_vAndres.R. 
+
+# The input data in this script is the output from part 1 - CDP-WWF_ITR_preparation_of_data.R: 'Scenario_dataset_detailed-' and 'Scenario_dataset_summary.xlsx', 
+# and the following: 
+# - Models.xlsx: which includes the model scenarios used in the regression analysis.
+# - Temp50.xlsx: which includes the 50th percentile of the AR6 climate diagnostics
+# These two files are created as separated xlsx file from the AR6 data. 
+# Available at https://github.com/WWF-Sweden/ITR-regression/tree/main/Input_regression
+
+# Data reference: 
 # Edward Byers, Volker Krey, Elmar Kriegler, Keywan Riahi, et al.
 # AR6 Scenarios Database hosted by IIASA
 # International Institute for Applied Systems Analysis, 2022.
 # doi: 10.5281/zenodo.5886911 | url: data.ece.iiasa.ac.at/ar6/ DOI
 
-######################################################################################################################.
+######################################################################################################################
 
-#                                           Regression and plots of data 
+#                                          Section overview
 
-######################################################################################################################.
+######################################################################################################################
 
-# Description: This script creates regressions and plots of AR6 scenario data, 
-# built on the output from AR6 Implementation_Preparation of data. The code includes different sections: 
 # Section 1. Preparation: install relevant packages and load libraries. 
 # Section 2. Load data output files generated in the first part of the R-code 
-# (Preparation of data) and xlsx created based on the underlying input AR data.   
+# and xlsx created based on the underlying AR6 data.   
 # Section 3. Defining benchmarks and variables for plotting.
 # Section 4. Plotting the data
 # Section 5. Create and store regression models
 # Section 6. Save final output
+
+######################################################################################################################
 
 # Section 1. Preparation  =================================================================================
 
@@ -31,7 +55,7 @@ rm(list=ls())
 
 # Set the path for where files should be collected from. The path needs to be 
 # updated depending on where the files are stored: 
-setwd('name of folder for the library, where the input files are stored')
+setwd('name of folder for the library, where the input files are stored') # Note that this path is likely the same as the one used in the first part of the R-code. 
 
 #Install and load packages
 install.packages("ggplot2")
@@ -58,7 +82,7 @@ library(magrittr)
 
 # Section 2. Load data files  =================================================================================
 
-# filepath to data set from the first part of the R-code:
+# filepath to data set from the first part of the R-code - CDP-WWF_ITR_preparation_of_data.R:
 f_datamap <- 'Scenario_dataset_summary.xlsx'
 
 # Load data output from the first (and only) sheet of the file. 
@@ -71,10 +95,10 @@ regoutputfinal <- data.frame(samplesize = numeric(1),model = character(1),variab
 # Loop through relevant files from scenario sets:
 for (counter in 1:nrow(datamapping)) {
   
-  # Load the csv-file generated in Preparation of data and read the scenario data:
+  # Load the csv-file generated in CDP-WWF_ITR_preparation_of_data.R:
   scens <- read.csv(paste("Scenario_dataset_detailed-",as.character(datamapping$V8[counter]),".csv",sep=""),stringsAsFactors=FALSE,strip.white=TRUE)
   
-  # Load xlsx file including the models used and add model family variable. This is created as a separated xlsx file from the AR6 data.
+  # Load xlsx file of the models used and add model family variable. This is created as a separated xlsx file from the AR6 data. See the introduction above.
   f_models <- 'Models.xlsx'
   models <-  (read.xlsx(f_models, sheet='Models'))
   scens <- merge(scens,models,by = "Model")
@@ -82,8 +106,8 @@ for (counter in 1:nrow(datamapping)) {
   # Rename the second column of scens to "concscen2". This need to be done in order to merge the model-scenarios between different files. 
   names(scens)[2] <- "concscen2"
   
-  # Load xlsx file with model scenarios from variable AR6 climate diagnostics|Surface Temperature (GSAT)|MAGICCv7.5.3|50.0th Percentile and the corresponding change in temperature in 2100 (50% MAGICC scores). The 50.0th percentile has been applied since there are no any climate scenario within the category C1 or C2 that have a higher value than 50.0. 
-  # This is created as a separated xlsx file from the AR6 data.
+  # Load xlsx file with model scenarios from variable AR6 climate diagnostics|Surface Temperature (GSAT)|MAGICCv7.5.3|50.0th Percentile and the corresponding change in temperature in 2100. 
+  # This is created as a separated xlsx file from the AR6 data. See the introduction above.
   f_temp50 <- 'Temp50.xlsx'
   temp50 <-  (read.xlsx(f_temp50, sheet='Temp50'))
   names(temp50)[2] <- "Warm2100MAG50"
@@ -102,7 +126,7 @@ for (counter in 1:nrow(datamapping)) {
   
   # Creating a vector of the variables to use for benchmarks:  
   benchdownsub <- c("Emissions|Kyoto Gases","Emissions|CO2|Energy and Industrial Processes","INT.emKyoto_gdp","INT.emCO2Elec_elecGen","INT.emCO2EI_PE","INT.emCO2EI_elecGen","INT.emCO2Transport_gdp","INT.emCO2EI_cement","INT.emCO2EI_steel","INT.emKyoto_m2","INT.emKyoto_finalenergy","INT.emCO2energysupply_SE","INT.emKyoto_PE","INT.emCO2energydemand_PE","Emissions|CO2|AFOLU","Emissions|CO2|Energy","Emissions|CO2|Energy|Demand","Emissions|CO2|Energy|Demand|Industry","Emissions|CO2|Energy|Demand|Residential and Commercial","Emissions|CO2|Energy|Demand|Transportation","Emissions|CO2|Energy|Demand|Transportation|Aviation","Emissions|CO2|Energy|Demand|Transportation|Rail","Emissions|CO2|Energy|Demand|Transportation|Road","Emissions|CO2|Energy|Supply","Emissions|CO2|Energy|Supply|Electricity","Emissions|CO2|Industrial Processes","Emissions|CO2|Energy|Demand|Industry|Cement","Emissions|CO2|Energy|Demand|Industry|Chemicals","Emissions|CO2|Energy|Demand|Transportation|Maritime","Emissions|CO2|Industrial Processes|Cement","Emissions|CO2|Industrial Processes|Chemicals","Emissions|CO2|Industrial Processes|Pulp and Paper","Emissions|CO2|Industrial Processes|Steel","Emissions|CO2|Energy|Demand|Industry|Pulp and Paper","Emissions|CO2|Energy|Demand|Industry|Steel")
-  
+
   
   # Re-name two variables in benchdata to facilitate the code:
   names(benchdata)[names(benchdata) %in% "Median_warming_in_2100_MAGICCv7_5_3"] <- "Warm2100MAG"
@@ -127,7 +151,7 @@ for (counter in 1:nrow(datamapping)) {
   total_na <- sum(is.na(benchdata))
   print(paste("Total NA values in benchdata: ", total_na))
   
-  # Control reason: check NA values for each column
+  # Control: check NA values for each column
   na_each_column <- colSums(is.na(benchdata))
   print("NA values in each column: ")
   print(na_each_column)
@@ -151,7 +175,7 @@ for (counter in 1:nrow(datamapping)) {
   
   # Section 4. Plotting the data  =================================================================================
   
-  #function for plotting equation and r2 on graph
+  #function for plotting linear equation and r^2 on graph
   lm_eqn <- function(df){
     m <- lm(y ~ x, df);
     eq <- substitute(italic(y) == a + b %.% italic(x)*","~~italic(r)^2~"="~r2, 
@@ -284,5 +308,3 @@ regoutputfinal <- subset(regoutputfinal,samplesize>0)
 write.csv(regoutputfinal,"Regressions_Summary.csv",row.names = FALSE)
 
 # ======================================= End of script =======================================
-
-
