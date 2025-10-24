@@ -17,8 +17,8 @@
 
 
 # Input data in this script is based on the IPCC AR6 Scenarios Database, which includes two main files:
-# - AR6_Scenarios_Database_World_v1.0
-# - AR6_Scenarios_Database_metadata_indicators_v1.0
+# - AR6_Scenarios_Database_World_v1.1
+# - AR6_Scenarios_Database_metadata_indicators_v1.1
 # Both files are available at: https://data.ece.iiasa.ac.at/ar6/
 
 # Data reference:
@@ -41,17 +41,17 @@
 
 ######################################################################################################################
 
-# AR6_Scenarios_Database_World_v1.0:
-# When downloading the AR6_Scenarios_Database_World_v1.0, the file is in csv format. To use it in this R scrip, it needs to be converted to an Excel file.
-# This has to be done manually, as the file is not available in Excel format on the IPCC AR6 Scenarios Database.
+# AR6_Scenarios_Database_World_v1.1:
+# When downloading the AR6_Scenarios_Database_World_v1.1, the file is in csv format. To use it in this R scrip, it needs to be converted to an Excel file (xlsx format).
+# This R-script will therefore start with converting the csv file to an xlsx file, which is then used in the rest of the script.
 
 
 # AR6_Scenarios_Database_metadata_indicators_v1.0: 
 # Column names in the metadata file have been adjusted manually to remove characters such as brackets () and periods (.),
-# which can interfere with variable naming in R. These characters have been replaced with underscores (_).
+# which can interfere with variable naming in R. These characters have been replaced with underscores (_) and brackets has been removed.
 # For example, "Median year of peak warming (MAGICCv7.5.3)" has been renamed to "Median_year_of_peak_warming_MAGICCv7_5_3".
-# This adjustment has already been applied to the file 'AR6_Scenarios_Database_metadata_indicators_v1.0.xlsx' on GitHub,
-# and does not apply to the 'World' data file.
+# This adjustment has already been applied to the file 'AR6_Scenarios_Database_metadata_indicators_v1.1.xlsx' on GitHub,
+# and does not apply to the AR6_Scenarios_Database_World_v1.1 file.
 
 ######################################################################################################################
 
@@ -59,7 +59,7 @@
 
 ######################################################################################################################
 
-# Section 1: Preamble, install and load libraries
+# Section 1: Preamble, install and load libraries and convert the AR6_Scenarios_Database_World_v1.1 from csv to xlsx format.
 # Section 2: Defines path to AR6 data 
 # Section 3: Contains functions that load and interpolate data, as well as combining variables and generating meta-data
 # Section 4.1-4.3 Prepare variable lists to import from AR6 data
@@ -74,8 +74,9 @@
 # clear working environment in R: 
 rm(list=ls())
 
-# Set the path for where files should be collected from. The path needs to be updated depending on where the files are stored: 
-setwd("Name of path to the folder with the input files")
+# Set the path for where files should be collected from. The path needs to be updated depending on where the files are stored on your computer:
+setwd("Name of folder where the files are stored")
+list.files() # Lists files in the current working directory. You should have at least these two files in the folder: "AR6_Scenarios_Database_World_v1.1.csv" and "AR6_Scenarios_Database_metadata_indicators_v1.1.xlsx" 
 
 # Install packages, if you have not installed the packages, you need to install them first:
 install.packages("plyr")
@@ -103,12 +104,35 @@ library(reshape2)
 library(tidyr)
 library(readxl)
 
+# Convert AR6_Scenarios_Database_World_v1.1 from csv to xlsx format¨
+
+# Read the CSV-file
+df <- read_csv("AR6_Scenarios_Database_World_v1.1.csv", col_names = TRUE)
+
+# Check to ensure the headings are correct 
+colnames(df) <- c("Model", "Scenario", "Region", "Variable", "Unit", as.character(1995:2100))
+
+# Convert the columns 1995–2100 to numeric values
+year_cols <- as.character(1995:2100)
+df <- df %>%
+  mutate(across(all_of(year_cols), ~ as.numeric(.)))
+
+# Save file as XLSX in the same folder as specified in the setwd() above
+write.xlsx(df, file = "AR6_Scenarios_Database_World_v1.1_xlsx.xlsx", overwrite = TRUE)
+cat("✅ File is saved as 'AR6_Scenarios_Database_World_v1.1_xlsx.xlsx' in folder.\n")
+
+# Check the files in the folder to ensure that the file is saved correctly:
+list.files() #  You should have at least these three files in the folder: 
+# "AR6_Scenarios_Database_World_v1.1.csv"
+# "AR6_Scenarios_Database_metadata_indicators_v1.1.xlsx" 
+# "AR6_Scenarios_Database_World_v1.1_xlsx.xlsx" - The one you just created.
+
 # Section 2. Defines path to AR6 data =================================================================================
 
 # Below load data from excel files - AR6 scenario data world and AR6 Metadata - and store them as file paths.
 # Load the AR6_Scenarios_Database_World_v1.1 and AR6_Scenarios_Database_metadata_indicators_v1.1 from the excel-files, and giving them the names f_AR6 and f_AR6_meta. Make sure that the names of the files are correct. 
-f_AR6 <- 'AR6_Scenarios_Database_World_v1.0.xlsx'
-f_AR6_meta <- 'AR6_Scenarios_Database_metadata_indicators_v1.0.xlsx'
+f_AR6 <- 'AR6_Scenarios_Database_World_v1.1_xlsx.xlsx'
+f_AR6_meta <- 'AR6_Scenarios_Database_metadata_indicators_v1.1.xlsx'
 
 # By default, ETP data retrieved from IEA is not used; but if use_etp is set to TRUE, ETP data is combined with AR6 data to calculate a few intensity indicators.
 f_etp <- 'ETP2017_industry_summary.xlsx'
@@ -638,7 +662,7 @@ AR6_output <- AR6_output %>% mutate(V8 = row_number())
 
 # Write the filtered data to a csv file
 if(write_csvs) {
-  write_excel_csv(AR6_output, path=paste0('name of folder to store output data/Scenario_dataset_detailed-', nfilters, '.csv')) # Note that the folder needs to be in the current path set in the beginning of the code, in section 1. 
+  write_excel_csv(AR6_output, path=paste0('Output/Scenario_dataset_detailed-', nfilters, '.csv')) # Note that a folder called "Output" needs to be in the current path set in the beginning of the code, in section 1. You need to create that folder before running the code.
 }
 
 # Create a summary of the data that includes number of rows and unique scenarios:
@@ -646,7 +670,7 @@ summary <- data.frame(V8 = 1:nfilters, nscenariosv = nscenariosv)
 
 # If you want to write the summary to an Excel file
 if(write_csvs) {
-  write.xlsx(summary, 'name of folder to store output data/Scenario_dataset_summary.xlsx', overwrite = TRUE) # Could be same as above. Note that the folder needs to be in the current path set in the beginning of the code, in section 1. 
+  write.xlsx(summary, 'Output/Scenario_dataset_summary.xlsx', overwrite = TRUE) # Could be same as above. Note that the folder needs to be in the current path set in the beginning of the code, in section 1. 
 }
 
 # ======================================= End of script =======================================

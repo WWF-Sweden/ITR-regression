@@ -53,9 +53,11 @@
 # clear working environment in R: 
 rm(list=ls())
 
-# Set the path for where files should be collected from. The path needs to be 
-# updated depending on where the files are stored: 
-setwd('name of folder for the library, where the input files are stored') # Note that this path is likely the same as the one used in the first part of the R-code. 
+# Set the path for where files should be collected from. 
+# The path needs to be updated depending on where the files are stored: 
+setwd("C:/Users/amanda.kihlman/R-test/AR6_Implementering/Test/Convert_1/out")
+list.files() # Lists files in the current working directory. You should have the output from the first part of the R-code, CDP-WWF_ITR_preparation_of_data.R, in the folder, and the two files Temp50v11 and Models11, possible to download from GitHub:https://github.com/WWF-Sweden/ITR-regression/tree/main/Input_regression  
+
 
 #Install and load packages
 install.packages("ggplot2")
@@ -99,7 +101,7 @@ for (counter in 1:nrow(datamapping)) {
   scens <- read.csv(paste("Scenario_dataset_detailed-",as.character(datamapping$V8[counter]),".csv",sep=""),stringsAsFactors=FALSE,strip.white=TRUE)
   
   # Load xlsx file of the models used and add model family variable. This is created as a separated xlsx file from the AR6 data. See the introduction above.
-  f_models <- 'Models.xlsx'
+  f_models <- 'Models11.xlsx'
   models <-  (read.xlsx(f_models, sheet='Models'))
   scens <- merge(scens,models,by = "Model")
   
@@ -108,7 +110,7 @@ for (counter in 1:nrow(datamapping)) {
   
   # Load xlsx file with model scenarios from variable AR6 climate diagnostics|Surface Temperature (GSAT)|MAGICCv7.5.3|50.0th Percentile and the corresponding change in temperature in 2100. 
   # This is created as a separated xlsx file from the AR6 data. See the introduction above.
-  f_temp50 <- 'Temp50.xlsx'
+  f_temp50 <- 'Temp50v11.xlsx'
   temp50 <-  (read.xlsx(f_temp50, sheet='Temp50'))
   names(temp50)[2] <- "Warm2100MAG50"
   scens <- merge(scens,temp50,by = "concscen2",all.x=TRUE,all.y=FALSE)
@@ -288,7 +290,6 @@ for (counter in 1:nrow(datamapping)) {
       
     }
   }
-  
   
   #close pdf
   dev.off()
